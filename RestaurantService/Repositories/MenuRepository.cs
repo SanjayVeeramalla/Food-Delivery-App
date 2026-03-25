@@ -11,6 +11,9 @@ namespace RestaurantService.Repositories
         Task<MenuItem> CreateAsync(MenuItem item);
         Task<bool> UpdateAsync(MenuItem item);
         Task<bool> DeleteAsync(int restaurantId, int menuItemId);
+        Task<List<MenuItem>> GetAllByRestaurantIdAsync(int restaurantId);
+        Task<bool> MarkUnavailableAsync(int restaurantId, int menuItemId);
+
     }
 
     public class MenuRepository : IMenuRepository
@@ -81,13 +84,34 @@ namespace RestaurantService.Repositories
             return true;
         }
 
-        public async Task<bool> DeleteAsync(int restaurantId, int menuItemId)
-        {
-            await _context.Database.ExecuteSqlRawAsync(
-                "EXEC sp_DeleteMenuItem @RestaurantId = {0}, @MenuItemId = {1}",
-                restaurantId, menuItemId);
+        public async Task<bool> MarkUnavailableAsync(int restaurantId, int menuItemId)
+{
+    var rows = await _context.Database.ExecuteSqlRawAsync(
+        "EXEC sp_MarkMenuItemUnavailable @RestaurantId = {0}, @MenuItemId = {1}",
+        restaurantId, menuItemId);
 
-            return true;
-        }
+    return rows > 0;
+}
+
+public async Task<bool> DeleteAsync(int restaurantId, int menuItemId)
+{
+    var rows = await _context.Database.ExecuteSqlRawAsync(
+        "EXEC sp_DeleteMenuItem @RestaurantId = {0}, @MenuItemId = {1}",
+        restaurantId, menuItemId);
+
+    return rows > 0;
+}
+
+        public async Task<List<MenuItem>> GetAllByRestaurantIdAsync(
+    int restaurantId)
+{
+    return await _context.MenuItems
+        .FromSqlRaw(
+            "EXEC sp_GetAllMenuByRestaurant @RestaurantId = {0}",
+            restaurantId)
+        .AsNoTracking()
+        .ToListAsync();
+}
+
     }
 }

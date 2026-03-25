@@ -11,6 +11,7 @@ namespace OrderService.Repositories
         Task<Order?> GetByIdAsync(int orderId);
         Task UpdateStatusAsync(int orderId, string status);
         Task<List<Order>> GetActiveOrdersAsync();
+        Task<List<Order>> GetAllOrdersAsync(); 
     }
 
     public class OrderRepository : IOrderRepository
@@ -99,6 +100,14 @@ namespace OrderService.Repositories
 
             return order;
         }
+
+        public async Task<List<Order>> GetAllOrdersAsync()
+{
+    return await _context.Orders
+        .FromSqlRaw("EXEC sp_GetAllOrders")
+        .AsNoTracking()
+        .ToListAsync();
+}
 
         public async Task UpdateStatusAsync(int orderId, string status)
         {

@@ -24,12 +24,5 @@ namespace PaymentService.DTOs
         public string? UpiId { get; set; }
     }
 
-    public class PaymentResponseDto
-    {
-        public int TransactionId { get; set; }
-        public int OrderId { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public string PaymentMethod { get; set; } = string.Empty;
-        public DateTime ProcessedAt { get; set; }
-    }
+ 
 }

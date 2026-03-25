@@ -4,7 +4,6 @@ using UserService.Models;
 
 namespace UserService.Repositories
 {
- 
     public class UserRepository : IUserRepository
     {
         private readonly UserDbContext _context;
@@ -24,6 +23,7 @@ namespace UserService.Repositories
             return users.FirstOrDefault();
         }
 
+        // Fixed — returns User? not UserProfileDto?
         public async Task<User?> GetByIdAsync(int userId)
         {
             var users = await _context.Users
@@ -48,8 +48,9 @@ namespace UserService.Repositories
         {
             var result = await _context.Users
                 .FromSqlRaw(
-                    "EXEC sp_RegisterUser @Name = {0}, @Email = {1}, " +
-                    "@PasswordHash = {2}, @Phone = {3}",
+                    "EXEC sp_RegisterUser @Name = {0}, " +
+                    "@Email = {1}, @PasswordHash = {2}, " +
+                    "@Phone = {3}",
                     user.Name,
                     user.Email,
                     user.PasswordHash,
@@ -59,8 +60,10 @@ namespace UserService.Repositories
             return result.FirstOrDefault() ?? user;
         }
 
+        // Fixed — returns User? not UserProfileDto?
         public async Task<User?> UpdateProfileAsync(
-            int userId, string name, string phone, string? address)
+            int userId, string name,
+            string phone, string? address)
         {
             var result = await _context.Users
                 .FromSqlRaw(

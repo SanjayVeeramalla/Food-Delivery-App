@@ -2,8 +2,6 @@ import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
-// Simple JWT decoder — reads the payload without verification
-// Verification happens on the backend
 function parseJwt(token) {
   try {
     const base64 = token.split('.')[1]
@@ -19,11 +17,9 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(
     localStorage.getItem('token'));
 
-  // Extract role from token payload
   const getRole = (t) => {
     if (!t) return null;
     const payload = parseJwt(t);
-    // ClaimTypes.Role maps to this long key in JWT
     return payload?.[
       'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
     ] || null;

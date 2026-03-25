@@ -19,9 +19,6 @@ function CartPage() {
   const navigate = useNavigate();
 
   const validateUpi = (id) => {
-    // UPI ID format: name@bankname
-    // name: letters, numbers, dots, hyphens (3-50 chars)
-    // bankname: letters only (2-20 chars)
     return /^[a-zA-Z0-9._-]{3,50}@[a-zA-Z]{2,20}$/.test(id);
   };
 
@@ -33,7 +30,6 @@ function CartPage() {
       return;
     }
 
-    // Validate based on selected payment method
     if (paymentMethod === 'Card') {
       if (!cardNumber.trim()) {
         setError('Please enter your card number.');

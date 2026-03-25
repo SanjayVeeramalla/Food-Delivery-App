@@ -19,6 +19,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<OrderStatusSimulatorService>();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration
         .GetConnectionString("DefaultConnection")));
@@ -26,13 +28,20 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService.Services.OrderService>();
 
-// HttpClient to call Payment Service
 builder.Services.AddHttpClient("PaymentService", client =>
 {
     client.BaseAddress = new Uri(
         builder.Configuration["Services:PaymentService"]!);
 });
+builder.Services.AddHttpClient("UserService", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Services:UserService"]);
+});
 
+builder.Services.AddHttpClient("RestaurantService", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Services:RestaurantService"]);
+});
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -51,7 +60,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
-// Run migrations on startup — must be before app.Run()
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider

@@ -111,5 +111,23 @@ namespace UserService.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+       public async Task<UserProfileDto?> GetByIdAsync(int id)
+{
+    // Repository returns User model
+    // Service maps it to UserProfileDto
+    var user = await _userRepo.GetByIdAsync(id);
+    if (user == null) return null;
+
+    return new UserProfileDto
+    {
+        Id        = user.Id,
+        Name      = user.Name,
+        Email     = user.Email,
+        Phone     = user.Phone,
+        Address   = user.Address,
+        Role      = user.Role,
+        CreatedAt = user.CreatedAt
+    };
+}
     }
 }

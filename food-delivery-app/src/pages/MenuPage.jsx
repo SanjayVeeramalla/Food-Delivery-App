@@ -23,14 +23,11 @@ function MenuPage() {
           `/api/restaurants/${restaurantId}`);
         setRestaurant(restRes.data);
 
-        // Load menu separately so restaurant info still shows
-        // even if menu is empty
         try {
           const menuRes = await api.get(
             `/api/restaurants/${restaurantId}/menu`);
           setMenu(menuRes.data);
         } catch (menuErr) {
-          // 404 on menu just means no items yet — not a crash
           setMenu([]);
         }
 

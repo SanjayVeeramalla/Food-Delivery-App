@@ -82,5 +82,21 @@ namespace UserService.Controllers
 
             return Ok(updated);
         }
+
+        [HttpGet("user/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var user = await _authService.GetByIdAsync(id);
+
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            return Ok(new
+            {
+                user.Id,
+                user.Name,
+                user.Email
+            });
+        }
     }
 }

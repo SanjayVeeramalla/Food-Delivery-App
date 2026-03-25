@@ -9,6 +9,7 @@ namespace PaymentService.Services
         Task<PaymentResponseDto> ProcessPaymentAsync(
             PaymentRequestDto dto);
         Task<PaymentResponseDto?> GetByOrderIdAsync(int orderId);
+         Task<List<PaymentResponseDto>> GetByUserIdAsync(int userId);
     }
 
     public class PaymentService : IPaymentService
@@ -103,5 +104,19 @@ namespace PaymentService.Services
                 ProcessedAt   = transaction.ProcessedAt
             };
         }
+        public async Task<List<PaymentResponseDto>> GetByUserIdAsync(
+    int userId)
+{
+    var transactions = await _repo.GetByUserIdAsync(userId);
+    return transactions.Select(t => new PaymentResponseDto
+    {
+        TransactionId = t.Id,
+        OrderId       = t.OrderId,
+        Status        = t.Status,
+        PaymentMethod = t.PaymentMethod,
+        ProcessedAt   = t.ProcessedAt,
+        Amount        = t.Amount  // add Amount to response DTO
+    }).ToList();
+}
     }
 }

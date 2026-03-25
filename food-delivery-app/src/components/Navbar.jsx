@@ -41,6 +41,7 @@ function Navbar() {
               <Link to="/restaurants">Restaurants</Link>
               <Link to="/cart">Cart ({cartItems.length})</Link>
               <Link to="/orders">My Orders</Link>
+              <Link to="/payments">Payments</Link> 
               <Link to="/profile">Profile</Link>
               {isAdmin && (
                 <Link to="/admin">Admin</Link>

@@ -4,7 +4,6 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
 
-  // ✅ Load cart from localStorage (safe parsing)
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem('cart');
@@ -23,13 +22,11 @@ export function CartProvider({ children }) {
     }
   });
 
-  // ✅ Save to localStorage on every change
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
     localStorage.setItem('cartRestaurantId', JSON.stringify(restaurantId));
   }, [cartItems, restaurantId]);
 
-  // ✅ Add item
   const addItem = (item, restId) => {
     if (cartItems.length > 0 && restaurantId && restaurantId !== restId) {
       const confirmed = window.confirm(
@@ -59,7 +56,6 @@ export function CartProvider({ children }) {
     return true;
   };
 
-  // ✅ Increase quantity
   const increaseQty = (menuItemId) => {
     setCartItems((prev) =>
       prev.map((i) =>
@@ -70,7 +66,6 @@ export function CartProvider({ children }) {
     );
   };
 
-  // ✅ Decrease quantity
   const decreaseQty = (menuItemId) => {
     setCartItems((prev) => {
       const item = prev.find((i) => i.menuItemId === menuItemId);
@@ -97,7 +92,6 @@ export function CartProvider({ children }) {
     });
   };
 
-  // ✅ Remove item completely
   const removeItem = (menuItemId) => {
     setCartItems((prev) => {
       const newItems = prev.filter((i) => i.menuItemId !== menuItemId);
@@ -110,13 +104,11 @@ export function CartProvider({ children }) {
     });
   };
 
-  // ✅ Clear cart
   const clearCart = () => {
     setCartItems([]);
     setRestaurantId(null);
   };
 
-  // ✅ Total amount calculation
   const totalAmount = cartItems.reduce(
     (sum, i) => sum + i.unitPrice * i.quantity,
     0

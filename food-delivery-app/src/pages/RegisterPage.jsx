@@ -121,7 +121,6 @@ function RegisterPage() {
               type="text"
               value={phone}
               onChange={(e) => {
-                // Only allow digits
                 const val = e.target.value.replace(/\D/g, '');
                 setPhone(val);
                 setError('');

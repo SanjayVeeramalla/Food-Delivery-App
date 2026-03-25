@@ -9,5 +9,6 @@ namespace UserService.Services
         Task<UserProfileDto?> GetProfileAsync(int userId);
         Task<UserProfileDto?> UpdateProfileAsync(
             int userId, UpdateProfileDto dto);
+            Task<UserProfileDto?> GetByIdAsync(int id);
     }
 }

@@ -2,7 +2,7 @@ using UserService.Models;
 
 namespace UserService.Repositories
 {
-       public interface IUserRepository
+    public interface IUserRepository
     {
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByIdAsync(int userId);
@@ -11,5 +11,4 @@ namespace UserService.Repositories
         Task<User?> UpdateProfileAsync(int userId, string name,
             string phone, string? address);
     }
-
 }

@@ -61,7 +61,6 @@ function OrdersPage() {
   useEffect(() => {
     fetchOrders();
 
-    // Poll every 15 seconds to get updated statuses
     intervalRef.current = setInterval(fetchOrders, 15000);
 
     return () => clearInterval(intervalRef.current);

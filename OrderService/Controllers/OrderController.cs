@@ -69,5 +69,13 @@ namespace OrderService.Controllers
                 updatedAt = order.UpdatedAt
             });
         }
+
+        [HttpGet("admin")]
+        [Authorize(Roles="Admin")]
+    public async Task<IActionResult> GetAllOrders()
+    {
+        var orders = await _orderService.GetAllOrdersWithDetailsAsync();
+        return Ok(orders);
+    }
     }
 }

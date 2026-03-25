@@ -89,5 +89,19 @@ namespace RestaurantService.Controllers
                     new { message = "Menu item not found." });
             return Ok(new { message = "Removed successfully." });
         }
+        
+[HttpGet("all")]
+[Authorize(Roles = "Admin")]
+public async Task<IActionResult> GetAllMenu(int restaurantId)
+{
+    _logger.LogInformation(
+        "Admin fetching all menu items for restaurant {Id}",
+        restaurantId);
+
+    var menu = await _menuService
+        .GetAllMenuByRestaurantAsync(restaurantId);
+
+    return Ok(menu);
+}
     }
 }

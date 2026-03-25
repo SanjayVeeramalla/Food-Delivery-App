@@ -11,6 +11,7 @@ namespace RestaurantService.Services
         Task<MenuItemDto> AddMenuItemAsync(int restaurantId, CreateMenuItemDto dto);
         Task<bool> UpdateMenuItemAsync(int restaurantId, int menuItemId, CreateMenuItemDto dto);
         Task<bool> DeleteMenuItemAsync(int restaurantId, int menuItemId);
+        Task<List<MenuItemDto>> GetAllMenuByRestaurantAsync(int restaurantId);
     }
 
     public class MenuService : IMenuService
@@ -95,5 +96,13 @@ namespace RestaurantService.Services
                 ImageUrl     = m.ImageUrl          // add this
             };
         }
+        public async Task<List<MenuItemDto>> GetAllMenuByRestaurantAsync(
+    int restaurantId)
+{
+    // Returns ALL items — used by admin only
+    var items = await _menuRepo
+        .GetAllByRestaurantIdAsync(restaurantId);
+    return items.Select(m => MapToDto(m)).ToList();
+}
     }
 }

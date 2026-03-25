@@ -9,6 +9,18 @@ function AdminPage() {
   const [message, setMessage]                 = useState('');
   const [error, setError]                     = useState('');
 
+   const [orders, setOrders] = useState([]);
+
+  // Edit state
+  const [editingItem, setEditingItem]         = useState(null);
+  // editingItem holds the menu item currently being edited
+  // null means no item is being edited
+
+  const [editForm, setEditForm] = useState({
+    name: '', description: '', price: '',
+    category: '', isAvailable: true, imageUrl: ''
+  });
+
   const [restForm, setRestForm] = useState({
     name: '', cuisineType: '', address: '', rating: ''
   });
@@ -32,10 +44,19 @@ function AdminPage() {
   const loadMenu = async (restaurantId) => {
     try {
       const res = await api.get(
-        `/api/restaurants/${restaurantId}/menu`);
+        `/api/restaurants/${restaurantId}/menu/all`);
       setMenuItems(res.data);
     } catch {
       setMenuItems([]);
+    }
+  };
+
+    const loadOrders = async () => {
+    try {
+      const res = await api.get('/api/orders/admin');
+      setOrders(res.data);
+    } catch {
+      setError('Failed to load orders.');
     }
   };
 
@@ -45,6 +66,7 @@ function AdminPage() {
     loadMenu(r.id);
     setMessage('');
     setError('');
+    setEditingItem(null); // clear any active edit
   };
 
   const handleAddRestaurant = async (e) => {
@@ -58,7 +80,9 @@ function AdminPage() {
         rating:      parseFloat(restForm.rating) || 0,
       });
       setMessage('Restaurant added successfully.');
-      setRestForm({ name:'', cuisineType:'', address:'', rating:'' });
+      setRestForm({
+        name: '', cuisineType: '', address: '', rating: ''
+      });
       loadRestaurants();
     } catch {
       setError('Failed to add restaurant.');
@@ -80,8 +104,8 @@ function AdminPage() {
       });
       setMessage('Menu item added successfully.');
       setMenuForm({
-        name:'', description:'', price:'',
-        category:'', isAvailable: true, imageUrl:''
+        name: '', description: '', price: '',
+        category: '', isAvailable: true, imageUrl: ''
       });
       loadMenu(selectedRestaurant.id);
     } catch {
@@ -89,13 +113,81 @@ function AdminPage() {
     }
   };
 
+  // Called when Edit button is clicked on a menu item
+  const handleEditClick = (item) => {
+    setEditingItem(item);
+    // Pre-fill the edit form with current values
+    setEditForm({
+      name:        item.name,
+      description: item.description  || '',
+      price:       item.price.toString(),
+      category:    item.category     || '',
+      isAvailable: item.isAvailable,
+      imageUrl:    item.imageUrl     || ''
+    });
+    setMessage('');
+    setError('');
+  };
+
+  // Called when Save button is clicked in edit form
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    setMessage(''); setError('');
+
+    // Basic validation
+    if (!editForm.name.trim()) {
+      setError('Item name is required.');
+      return;
+    }
+    if (!editForm.price || parseFloat(editForm.price) <= 0) {
+      setError('Price must be greater than 0.');
+      return;
+    }
+
+    try {
+      await api.put(
+        `/api/restaurants/${selectedRestaurant.id}` +
+        `/menu/${editingItem.id}`,
+        {
+          name:        editForm.name.trim(),
+          description: editForm.description.trim(),
+          price:       parseFloat(editForm.price),
+          category:    editForm.category.trim(),
+          isAvailable: editForm.isAvailable,
+          imageUrl:    editForm.imageUrl.trim() || null,
+        }
+      );
+      setMessage(
+        `${editForm.name} updated successfully.`);
+      setEditingItem(null); // close edit form
+      loadMenu(selectedRestaurant.id); // refresh list
+    } catch {
+      setError('Failed to update menu item.');
+    }
+  };
+
+  // Called when Cancel button is clicked in edit form
+  const handleEditCancel = () => {
+    setEditingItem(null);
+    setEditForm({
+      name: '', description: '', price: '',
+      category: '', isAvailable: true, imageUrl: ''
+    });
+    setError('');
+  };
+
   const handleDeleteMenuItem = async (menuItemId) => {
     if (!window.confirm('Remove this menu item?')) return;
+    setMessage(''); setError('');
     try {
       await api.delete(
-        `/api/restaurants/${selectedRestaurant.id}/menu/${menuItemId}`
+        `/api/restaurants/${selectedRestaurant.id}` +
+        `/menu/${menuItemId}`
       );
       setMessage('Menu item removed.');
+      if (editingItem?.id === menuItemId) {
+        setEditingItem(null); // close edit if deleted item was open
+      }
       loadMenu(selectedRestaurant.id);
     } catch {
       setError('Failed to remove menu item.');
@@ -108,32 +200,50 @@ function AdminPage() {
         <h2>Admin Dashboard</h2>
       </div>
 
-      {message && <div className="success-message">{message}</div>}
-      {error   && <div className="error-message">{error}</div>}
+      {message && (
+        <div className="success-message">{message}</div>
+      )}
+      {error && (
+        <div className="error-message">{error}</div>
+      )}
 
       {/* Tabs */}
       <div className="admin-tabs">
         <button
-          className={activeTab === 'restaurants' ? 'tab active' : 'tab'}
+          className={activeTab === 'restaurants'
+            ? 'tab active' : 'tab'}
           onClick={() => {
             setActiveTab('restaurants');
             setMessage(''); setError('');
+            setEditingItem(null);
           }}
         >
           All Restaurants
         </button>
         <button
-          className={activeTab === 'add-restaurant' ? 'tab active' : 'tab'}
+          className={activeTab === 'add-restaurant'
+            ? 'tab active' : 'tab'}
           onClick={() => {
             setActiveTab('add-restaurant');
             setMessage(''); setError('');
+            setEditingItem(null);
           }}
         >
           Add Restaurant
         </button>
+         <button
+          className={activeTab === 'orders' ? 'tab active' : 'tab'}
+          onClick={() => {
+            setActiveTab('orders');
+            loadOrders(); // 🔥 load orders
+          }}
+        >
+          All Orders
+        </button>
         {selectedRestaurant && (
           <button
-            className={activeTab === 'menu' ? 'tab active' : 'tab'}
+            className={activeTab === 'menu'
+              ? 'tab active' : 'tab'}
             onClick={() => setActiveTab('menu')}
           >
             Menu — {selectedRestaurant.name}
@@ -141,11 +251,49 @@ function AdminPage() {
         )}
       </div>
 
-      {/* Restaurants list */}
+      {/* Orders Tab */}
+      {activeTab === 'orders' && (
+        <div className="admin-section">
+          <h3>All Orders</h3>
+
+          {orders.length === 0 ? (
+            <p>No orders found.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Restaurant</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map(o => (
+                  <tr key={o.id}>
+                    <td>{o.id}</td>
+                    <td>{o.userName}</td>
+                    <td>{o.userEmail}</td>
+                    <td>{o.restaurantName}</td>
+                    <td>₹{o.totalAmount}</td>
+                    <td>{o.status}</td>
+                    <td>{new Date(o.placedAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* All Restaurants tab */}
       {activeTab === 'restaurants' && (
         <div className="admin-section">
           <p className="admin-hint">
-            Click Manage Menu to add or remove items.
+            Click Manage Menu to add, edit, or remove items.
           </p>
           <table className="admin-table">
             <thead>
@@ -169,7 +317,8 @@ function AdminPage() {
                   <td>
                     <button
                       className="btn-manage"
-                      onClick={() => handleSelectRestaurant(r)}
+                      onClick={() =>
+                        handleSelectRestaurant(r)}
                     >
                       Manage Menu
                     </button>
@@ -181,19 +330,22 @@ function AdminPage() {
         </div>
       )}
 
-      {/* Add restaurant */}
+      {/* Add Restaurant tab */}
       {activeTab === 'add-restaurant' && (
         <div className="admin-section">
           <h3>Add New Restaurant</h3>
-          <form onSubmit={handleAddRestaurant}
-            className="admin-form">
+          <form
+            onSubmit={handleAddRestaurant}
+            className="admin-form"
+          >
             <div className="form-group">
               <label>Restaurant Name</label>
               <input
                 type="text"
                 value={restForm.name}
                 onChange={(e) =>
-                  setRestForm({ ...restForm, name: e.target.value })}
+                  setRestForm({
+                    ...restForm, name: e.target.value })}
                 placeholder="e.g. Ariya Nivaas"
                 required
               />
@@ -239,11 +391,134 @@ function AdminPage() {
         </div>
       )}
 
-      {/* Menu management */}
+      {/* Menu Management tab */}
       {activeTab === 'menu' && selectedRestaurant && (
         <div className="admin-section">
           <h3>Menu — {selectedRestaurant.name}</h3>
 
+          {/* Edit Form — shown when editingItem is set */}
+          {editingItem && (
+            <div className="edit-form-container">
+              <h4>
+                Editing: {editingItem.name}
+              </h4>
+              <form
+                onSubmit={handleEditSave}
+                className="admin-form"
+              >
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Item Name</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => {
+                        setEditForm({
+                          ...editForm,
+                          name: e.target.value });
+                        setError('');
+                      }}
+                      placeholder="Item name"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Category</label>
+                    <input
+                      type="text"
+                      value={editForm.category}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          category: e.target.value })}
+                      placeholder="e.g. Main Course"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Description</label>
+                  <input
+                    type="text"
+                    value={editForm.description}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        description: e.target.value })}
+                    placeholder="Short description"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Price (Rs.)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editForm.price}
+                      onChange={(e) => {
+                        setEditForm({
+                          ...editForm,
+                          price: e.target.value });
+                        setError('');
+                      }}
+                      placeholder="e.g. 280"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Available</label>
+                    <select
+                      value={editForm.isAvailable}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          isAvailable:
+                            e.target.value === 'true'
+                        })}
+                    >
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Image URL (optional)</label>
+                  <input
+                    type="text"
+                    value={editForm.imageUrl}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        imageUrl: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                  />
+                </div>
+
+                <div className="edit-form-actions">
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    style={{
+                      width: 'auto', padding: '10px 28px'
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={handleEditCancel}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Menu Items Table */}
           {menuItems.length === 0 ? (
             <p className="admin-hint">
               No menu items yet. Add one below.
@@ -256,17 +531,41 @@ function AdminPage() {
                   <th>Category</th>
                   <th>Price</th>
                   <th>Available</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {menuItems.map((item) => (
-                  <tr key={item.id}>
+                  <tr
+                    key={item.id}
+                    className={
+                      editingItem?.id === item.id
+                        ? 'editing-row' : ''
+                    }
+                  >
                     <td>{item.name}</td>
                     <td>{item.category}</td>
                     <td>Rs. {item.price}</td>
-                    <td>{item.isAvailable ? 'Yes' : 'No'}</td>
                     <td>
+                      {item.isAvailable ? (
+                        <span className="badge-available">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="badge-unavailable">
+                          No
+                        </span>
+                      )}
+                    </td>
+                    <td className="action-cell">
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleEditClick(item)}
+                        disabled={editingItem?.id === item.id}
+                      >
+                        {editingItem?.id === item.id
+                          ? 'Editing...' : 'Edit'}
+                      </button>
                       <button
                         className="btn-remove"
                         onClick={() =>
@@ -281,86 +580,104 @@ function AdminPage() {
             </table>
           )}
 
-          <h3 style={{ marginTop: '28px' }}>Add Menu Item</h3>
-          <form onSubmit={handleAddMenuItem} className="admin-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label>Item Name</label>
-                <input
-                  type="text"
-                  value={menuForm.name}
-                  onChange={(e) =>
-                    setMenuForm({ ...menuForm, name: e.target.value })}
-                  placeholder="e.g. Butter Chicken"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <input
-                  type="text"
-                  value={menuForm.category}
-                  onChange={(e) =>
-                    setMenuForm({
-                      ...menuForm, category: e.target.value })}
-                  placeholder="e.g. Main Course"
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <input
-                type="text"
-                value={menuForm.description}
-                onChange={(e) =>
-                  setMenuForm({
-                    ...menuForm, description: e.target.value })}
-                placeholder="Short description"
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Price (Rs.)</label>
-                <input
-                  type="number" min="1"
-                  value={menuForm.price}
-                  onChange={(e) =>
-                    setMenuForm({
-                      ...menuForm, price: e.target.value })}
-                  placeholder="e.g. 280"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Available</label>
-                <select
-                  value={menuForm.isAvailable}
-                  onChange={(e) =>
-                    setMenuForm({
-                      ...menuForm,
-                      isAvailable: e.target.value === 'true'
-                    })}
-                >
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Image URL (optional)</label>
-              <input
-                type="text"
-                value={menuForm.imageUrl}
-                onChange={(e) =>
-                  setMenuForm({
-                    ...menuForm, imageUrl: e.target.value })}
-                placeholder="https://images.unsplash.com/..."
-              />
-            </div>
-            <button type="submit" className="btn-primary">
-              Add Menu Item
-            </button>
-          </form>
+          {/* Add Menu Item Form */}
+          {!editingItem && (
+            <>
+              <h3 style={{ marginTop: '28px' }}>
+                Add Menu Item
+              </h3>
+              <form
+                onSubmit={handleAddMenuItem}
+                className="admin-form"
+              >
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Item Name</label>
+                    <input
+                      type="text"
+                      value={menuForm.name}
+                      onChange={(e) =>
+                        setMenuForm({
+                          ...menuForm,
+                          name: e.target.value })}
+                      placeholder="e.g. Butter Chicken"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Category</label>
+                    <input
+                      type="text"
+                      value={menuForm.category}
+                      onChange={(e) =>
+                        setMenuForm({
+                          ...menuForm,
+                          category: e.target.value })}
+                      placeholder="e.g. Main Course"
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Description</label>
+                  <input
+                    type="text"
+                    value={menuForm.description}
+                    onChange={(e) =>
+                      setMenuForm({
+                        ...menuForm,
+                        description: e.target.value })}
+                    placeholder="Short description"
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Price (Rs.)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={menuForm.price}
+                      onChange={(e) =>
+                        setMenuForm({
+                          ...menuForm,
+                          price: e.target.value })}
+                      placeholder="e.g. 280"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Available</label>
+                    <select
+                      value={menuForm.isAvailable}
+                      onChange={(e) =>
+                        setMenuForm({
+                          ...menuForm,
+                          isAvailable:
+                            e.target.value === 'true'
+                        })}
+                    >
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Image URL (optional)</label>
+                  <input
+                    type="text"
+                    value={menuForm.imageUrl}
+                    onChange={(e) =>
+                      setMenuForm({
+                        ...menuForm,
+                        imageUrl: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                  />
+                </div>
+                <button type="submit" className="btn-primary">
+                  Add Menu Item
+                </button>
+              </form>
+            </>
+          )}
         </div>
       )}
     </div>

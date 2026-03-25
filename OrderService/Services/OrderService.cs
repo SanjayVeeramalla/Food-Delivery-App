@@ -1,7 +1,9 @@
 using OrderService.DTOs;
 using OrderService.Models;
 using OrderService.Repositories;
-
+using OrderService.DTOs;
+using Microsoft.AspNetCore.Http;
+using System.Net.Http.Headers;
 namespace OrderService.Services
 {
     public interface IOrderService
@@ -9,6 +11,7 @@ namespace OrderService.Services
         Task<OrderResponseDto?> PlaceOrderAsync(PlaceOrderDto dto, int userId);
         Task<List<Order>> GetOrdersByUserAsync(int userId);
         Task<Order?> GetOrderByIdAsync(int orderId);
+        Task<List<object>> GetAllOrdersWithDetailsAsync();
     }
 
     public class OrderService : IOrderService
@@ -17,14 +20,19 @@ namespace OrderService.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IOrderRepository orderRepo,
-            IHttpClientFactory httpClientFactory,
-            ILogger<OrderService> logger)
-        {
-            _orderRepo = orderRepo;
-            _httpClientFactory = httpClientFactory;
-            _logger = logger;
-        }
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+public OrderService(
+    IOrderRepository orderRepo,
+    IHttpClientFactory httpClientFactory,
+    ILogger<OrderService> logger,
+    IHttpContextAccessor httpContextAccessor)
+{
+    _orderRepo = orderRepo;
+    _httpClientFactory = httpClientFactory;
+    _logger = logger;
+    _httpContextAccessor = httpContextAccessor;
+}
 
         public async Task<OrderResponseDto?> PlaceOrderAsync(
      PlaceOrderDto dto, int userId)
@@ -38,7 +46,7 @@ namespace OrderService.Services
                 TotalAmount = total,
                 DeliveryAddress = dto.DeliveryAddress,
                 Status = "Pending",
-                PaymentMethod = dto.PaymentMethod  // add this
+                PaymentMethod = dto.PaymentMethod  
             };
 
             order.Items = dto.Items.Select(i => new OrderItem
@@ -107,7 +115,7 @@ namespace OrderService.Services
                 TotalAmount = order.TotalAmount,
                 Status = order.Status,
                 DeliveryAddress = order.DeliveryAddress,
-                PaymentMethod = order.PaymentMethod,   // add this
+                PaymentMethod = order.PaymentMethod,   
                 PlacedAt = order.PlacedAt,
                 UpdatedAt = order.UpdatedAt,
                 Items = order.Items.Select(i => new OrderItemResponseDto
@@ -130,5 +138,67 @@ namespace OrderService.Services
         {
             return await _orderRepo.GetByIdAsync(orderId);
         }
+
+      public async Task<List<object>> GetAllOrdersWithDetailsAsync()
+{
+    var orders = await _orderRepo.GetAllOrdersAsync();
+
+    var userClient = _httpClientFactory
+        .CreateClient("UserService");
+    var restaurantClient = _httpClientFactory
+        .CreateClient("RestaurantService");
+
+    var token = _httpContextAccessor.HttpContext?
+        .Request.Headers["Authorization"]
+        .ToString();
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        userClient.DefaultRequestHeaders.Authorization =
+            AuthenticationHeaderValue.Parse(token);
+        restaurantClient.DefaultRequestHeaders.Authorization =
+            AuthenticationHeaderValue.Parse(token);
+    }
+
+    var result = new List<object>();
+
+    foreach (var order in orders)
+    {
+        UserDto? user         = null;
+        RestaurantDto? restaurant = null;
+
+        try
+        {
+            // Fixed URL — matches new endpoint
+            user = await userClient
+                .GetFromJsonAsync<UserDto>(
+                    $"/api/auth/user/{order.UserId}");
+        }
+        catch { }
+
+        try
+        {
+            restaurant = await restaurantClient
+                .GetFromJsonAsync<RestaurantDto>(
+                    $"/api/restaurants/{order.RestaurantId}");
+        }
+        catch { }
+
+        result.Add(new
+        {
+            order.Id,
+            order.TotalAmount,
+            order.Status,
+            order.PaymentMethod,
+            order.DeliveryAddress,
+            order.PlacedAt,
+            UserName       = user?.Name    ?? "Unknown",
+            UserEmail      = user?.Email   ?? "Unknown",
+            RestaurantName = restaurant?.Name ?? "Unknown"
+        });
+    }
+
+    return result;
+}
     }
 }

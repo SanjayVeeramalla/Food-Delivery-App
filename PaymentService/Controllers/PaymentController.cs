@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.DTOs;
 using PaymentService.Services;
+using System.Security.Claims; // ← this was missing
 
 namespace PaymentService.Controllers
 {
@@ -19,13 +21,15 @@ namespace PaymentService.Controllers
         }
 
         [HttpPost("process")]
-        public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDto dto)
+        public async Task<IActionResult> ProcessPayment(
+            [FromBody] PaymentRequestDto dto)
         {
             _logger.LogInformation(
-                "Processing payment for Order {OrderId}, Amount {Amount}",
-                dto.OrderId, dto.Amount);
+                "Processing payment for Order {OrderId}",
+                dto.OrderId);
 
-            var result = await _paymentService.ProcessPaymentAsync(dto);
+            var result = await _paymentService
+                .ProcessPaymentAsync(dto);
 
             if (result.Status == "Failed")
                 return BadRequest(result);
@@ -34,13 +38,34 @@ namespace PaymentService.Controllers
         }
 
         [HttpGet("{orderId}")]
+        [Authorize]
         public async Task<IActionResult> GetByOrder(int orderId)
         {
-            var result = await _paymentService.GetByOrderIdAsync(orderId);
+            var result = await _paymentService
+                .GetByOrderIdAsync(orderId);
+
             if (result == null)
-                return NotFound(new { message = "No transaction found for this order." });
+                return NotFound(
+                    new { message = "No transaction found." });
 
             return Ok(result);
+        }
+
+        [HttpGet("history")]
+        [Authorize]
+        public async Task<IActionResult> GetPaymentHistory()
+        {
+            var userIdClaim = User.FindFirst(
+                ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim);
+
+            var history = await _paymentService
+                .GetByUserIdAsync(userId);
+
+            return Ok(history);
         }
     }
 }

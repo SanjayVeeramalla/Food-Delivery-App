@@ -22,10 +22,8 @@ function LoginPage() {
         email, password
       });
 
-      // Save token first
       login(res.data.token);
 
-      // Decode token to check role immediately
       const base64  = res.data.token.split('.')[1]
         .replace(/-/g, '+').replace(/_/g, '/');
       const payload = JSON.parse(atob(base64));
@@ -34,7 +32,6 @@ function LoginPage() {
         'identity/claims/role'
       ];
 
-      // Redirect based on role
       if (role === 'Admin') {
         navigate('/admin');
       } else {

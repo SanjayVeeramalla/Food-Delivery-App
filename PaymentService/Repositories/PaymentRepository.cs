@@ -8,6 +8,7 @@ namespace PaymentService.Repositories
     {
         Task<Transaction> CreateAsync(Transaction transaction);
         Task<Transaction?> GetByOrderIdAsync(int orderId);
+        Task<List<Transaction>> GetByUserIdAsync(int userId);
     }
 
     public class PaymentRepository : IPaymentRepository
@@ -52,5 +53,14 @@ namespace PaymentService.Repositories
 
             return result.FirstOrDefault();
         }
+        public async Task<List<Transaction>> GetByUserIdAsync(int userId)
+{
+    return await _context.Transactions
+        .FromSqlRaw(
+            "EXEC sp_GetTransactionsByUserId @UserId = {0}",
+            userId)
+        .AsNoTracking()
+        .ToListAsync();
+}
     }
 }

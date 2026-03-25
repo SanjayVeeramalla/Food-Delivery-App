@@ -570,6 +570,77 @@ body {
   padding: 1px 10px;
   font-size: 13px;
 }
+.payment-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.payment-history-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.payment-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+}
+
+.payment-history-id {
+  font-weight: 500;
+  font-size: 15px;
+  margin-right: 12px;
+}
+
+.payment-history-order {
+  font-size: 13px;
+  color: #888;
+}
+
+.payment-history-status {
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.payment-history-body {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.payment-history-label { color: #888; }
+
+.payment-history-value { color: #222; }
+
+.payment-history-value.amount {
+  font-weight: 600;
+  font-size: 16px;
+  color: #e74c3c;
+}
+
+@media (max-width: 480px) {
+  .payment-history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
 
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -813,4 +884,76 @@ body {
   .profile-row      { flex-direction: column; gap: 4px; }
   .profile-label    { width: auto; }
   .profile-actions  { flex-direction: column; }
+}
+
+.edit-form-container {
+  background: #fff8f0;
+  border: 1.5px solid #e08000;
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.edit-form-container h4 {
+  font-size: 15px;
+  font-weight: 500;
+  color: #e08000;
+  margin-bottom: 16px;
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Edit button */
+.btn-edit {
+  padding: 5px 14px;
+  background: #e08000;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-right: 6px;
+}
+
+.btn-edit:hover    { background: #b86800; }
+.btn-edit:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Highlight the row being edited */
+.editing-row {
+  background: #fff8f0;
+}
+
+/* Available / unavailable badges */
+.badge-available {
+  background: #eafaf1;
+  color: #1a6b3a;
+  border: 1px solid #a9dfbf;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.badge-unavailable {
+  background: #fdecea;
+  color: #c0392b;
+  border: 1px solid #f5b7b1;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.action-cell {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .edit-form-actions { flex-direction: column; }
+  .action-cell       { display: flex; gap: 6px; }
 }
